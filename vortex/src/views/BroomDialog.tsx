@@ -104,6 +104,7 @@ class BroomDialog extends ComponentEx<IProps, IComponentState> {
             if (this.isParentDir(file, this.props.stagingPath)) {
                 if (this.props.deleteOption) {
                     await fs.unlinkAsync(file)
+                    await this.cleanupEmptyDirs(pathlib.dirname(file), this.props.stagingPath)
                 }
                 else if (this.props.unhideOption) {
                     await fs.renameAsync(file, file.replace(/.vohidden$/, ""))
@@ -119,6 +120,19 @@ class BroomDialog extends ComponentEx<IProps, IComponentState> {
         }
 
         this.doneFileHandler();
+    }
+
+    private cleanupEmptyDirs = async (dir: string, root: string) => {
+        if (!this.isParentDir(dir, root)) return;
+
+        try {
+            const files = await fs.readdirAsync(dir)
+            if (files.length === 0) {
+                await fs.rmdirAsync(dir)
+                await this.cleanupEmptyDirs(pathlib.dirname(dir), root)
+            }
+        } catch (err) {
+        }
     }
 
     private isParentDir(child: string, parent: string): boolean {
